@@ -1,107 +1,197 @@
-# starter_v0 — intentionally incomplete first-draft declarations.
-# Students improve routing guidance, argument conventions, missing-information
-# handling, and confirmation boundaries through v1/v2/v3.
+# starter_v0 — improved tool declarations for IT Helpdesk.
+# The tool names and evaluation-facing parameter names are kept unchanged.
+# Data used by these tools may be synthetic/demo data.
 #
-# Keep built-in names and supplied evaluation cases unchanged.
-# Improve descriptions and compatible schemas. Declare team-built bonus tools
-# here and in tools/__init__.py, then test them with team-authored cases.
+# Routing principles:
+# - Ask for missing identifiers before calling a tool.
+# - Use search_kb for how-to guidance; use policy for internal rules.
+# - Use check_service_status for service-wide outages, not a user's device.
+# - Use inspect_device for a specific asset.
+# - Never send internal identifiers or employee data to search_device_info.
+# - create_ticket is an external side effect: only call it after the user
+#   explicitly confirms the final ticket summary and priority.
 tools:
   # ---------------- Core tools ----------------
   - name: clarify
-    description: "Gửi một câu hỏi cho người dùng."
+    description: "Hỏi người dùng để lấy đúng thông tin còn thiếu trước khi gọi tool. Không dùng để thay thế một tool có thể trả lời trực tiếp. Với thao tác tạo ticket, dùng để xin xác nhận rõ ràng trước khi thực hiện."
     parameters:
       type: object
       properties:
-        question: {type: string, default: "", description: "Câu hỏi"}
-        response_type: {type: string, enum: [text, yes_no, choice], default: "text", description: "Kiểu trả lời"}
-        options: {type: array, default: [], items: {type: string}, description: "Các lựa chọn"}
+        question:
+          type: string
+          default: ""
+          description: "Một câu hỏi ngắn, cụ thể, chỉ yêu cầu thông tin cần thiết cho bước tiếp theo."
+        response_type:
+          type: string
+          enum: [text, yes_no, choice]
+          default: "text"
+          description: "Kiểu phản hồi mong đợi. Dùng yes_no cho xác nhận hoặc hủy; dùng choice khi có danh sách lựa chọn rõ ràng."
+        options:
+          type: array
+          default: []
+          items: {type: string}
+          description: "Các lựa chọn cho người dùng; chỉ điền khi response_type là choice."
       required: [question]
 
   - name: search_kb
-    description: "Tìm hướng dẫn hỗ trợ kỹ thuật."
+    description: "Tìm hướng dẫn kỹ thuật nội bộ từ knowledge base. Dùng cho câu hỏi 'làm thế nào', troubleshooting và hướng dẫn thao tác. Không dùng để kiểm tra trạng thái dịch vụ hoặc tra cứu người dùng. Không suy đoán nội dung khi không có kết quả phù hợp."
     parameters:
       type: object
       properties:
-        query: {type: string, default: "", description: "Nội dung cần tìm"}
-        category: {type: string, enum: [all, vpn, email, wifi, printing, account, security, hardware, software, meeting_room], default: "all", description: "Nhóm hướng dẫn"}
-        top_k: {type: integer, default: 3, description: "Số kết quả"}
+        query:
+          type: string
+          default: ""
+          description: "Mô tả vấn đề hoặc nhu cầu cần tìm, bao gồm triệu chứng hoặc tác vụ người dùng muốn thực hiện."
+        category:
+          type: string
+          enum: [all, vpn, email, wifi, printing, account, security, hardware, software, meeting_room]
+          default: "all"
+          description: "Nhóm hướng dẫn gần nhất với vấn đề. Chọn all nếu chưa xác định được nhóm."
+        top_k:
+          type: integer
+          default: 3
+          description: "Số kết quả cần lấy; ưu tiên 1–5 kết quả liên quan."
       required: [query]
 
   - name: check_service_status
-    description: "Kiểm tra trạng thái một dịch vụ."
+    description: "Kiểm tra trạng thái hiện tại của một dịch vụ IT dùng chung. Dùng khi người dùng hỏi dịch vụ có đang lỗi, gián đoạn hoặc hoạt động bình thường hay không. Không dùng để chẩn đoán một máy cụ thể."
     parameters:
       type: object
       properties:
-        service: {type: string, enum: [vpn, email, sso, wifi, printing], description: "Tên dịch vụ"}
-        environment: {type: string, enum: [production, staging], default: "production", description: "Môi trường"}
+        service:
+          type: string
+          enum: [vpn, email, sso, wifi, printing]
+          description: "Dịch vụ cần kiểm tra."
+        environment:
+          type: string
+          enum: [production, staging]
+          default: "production"
+          description: "Môi trường cần kiểm tra. Nếu người dùng không nói rõ, dùng production cho sự cố của người dùng thông thường."
       required: [service]
 
   - name: inspect_device
-    description: "Kiểm tra thông tin và chẩn đoán thiết bị."
+    description: "Kiểm tra thông tin và tình trạng của một thiết bị cụ thể theo mã tài sản. Chỉ gọi khi đã có asset_id; nếu thiếu thì hỏi lại. Dùng để chẩn đoán thiết bị, không dùng thay cho kiểm tra trạng thái dịch vụ chung."
     parameters:
       type: object
       properties:
-        asset_id: {type: string, description: "Mã tài sản"}
-        check: {type: string, enum: [all, network, vpn, security, hardware, software], default: "all", description: "Nhóm kiểm tra"}
+        asset_id:
+          type: string
+          description: "Mã tài sản của thiết bị, ví dụ ASSET-1042. Không tự bịa mã nếu người dùng chưa cung cấp hoặc hệ thống chưa có mã."
+        check:
+          type: string
+          enum: [all, network, vpn, security, hardware, software]
+          default: "all"
+          description: "Phạm vi kiểm tra. Chọn nhóm cụ thể nếu người dùng đã nêu vấn đề; dùng all khi cần chẩn đoán tổng quát."
       required: [asset_id]
 
   - name: lookup_user
-    description: "Tra cứu người dùng trong danh bạ hỗ trợ."
+    description: "Tra cứu người dùng trong danh bạ IT nội bộ bằng mã nhân viên. Chỉ dùng khi thực sự cần xác định người dùng hoặc thông tin danh bạ cho một quy trình hỗ trợ. Không tiết lộ dữ liệu nội bộ cho người không có yêu cầu phù hợp."
     parameters:
       type: object
       properties:
-        employee_id: {type: string, description: "Mã nhân viên"}
+        employee_id:
+          type: string
+          description: "Mã nhân viên do người dùng cung cấp hoặc đã được xác định trong hội thoại. Không tự bịa mã."
       required: [employee_id]
 
   - name: format_incident_report
-    description: "Trình bày các kết quả đã có thành báo cáo."
+    description: "Tổng hợp các kết quả đã thu thập thành báo cáo sự cố. Chỉ đưa vào findings những thông tin đã có từ hội thoại hoặc kết quả tool; không tự tạo chẩn đoán hay dữ liệu mới."
     parameters:
       type: object
       properties:
         findings:
           type: array
           default: []
-          description: "Các kết quả đã thu thập"
+          description: "Các phát hiện đã thu thập từ các bước trước."
           items:
             type: object
             properties:
-              label: {type: string}
-              detail: {type: string}
-              source: {type: string}
-              status: {type: string}
-        template: {type: string, enum: [brief, technical, handoff], default: "brief", description: "Mẫu báo cáo"}
-        incident_title: {type: string, default: "IT incident", description: "Tiêu đề"}
+              label:
+                type: string
+                description: "Tên ngắn của phát hiện."
+              detail:
+                type: string
+                description: "Chi tiết của phát hiện dựa trên dữ liệu đã có."
+              source:
+                type: string
+                description: "Nguồn của phát hiện, ví dụ inspect_device hoặc check_service_status."
+              status:
+                type: string
+                description: "Trạng thái hoặc kết luận đã quan sát được."
+        template:
+          type: string
+          enum: [brief, technical, handoff]
+          default: "brief"
+          description: "Mẫu báo cáo: brief cho tóm tắt, technical cho kỹ thuật, handoff cho bàn giao."
+        incident_title:
+          type: string
+          default: "IT incident"
+          description: "Tiêu đề ngắn của sự cố."
       required: [findings, template]
 
   # ---------------- Optional/advanced tools ----------------
   - name: search_device_info
-    description: "Tìm thông tin công khai về một model thiết bị trên web. Chỉ truyền hãng, model và loại thông tin; không truyền asset ID, employee ID hoặc dữ liệu nội bộ."
+    description: "Tìm thông tin công khai về một model thiết bị trên web. Chỉ truyền dữ liệu công khai gồm hãng, model và loại thông tin. TUYỆT ĐỐI không truyền asset ID, employee ID, tên người dùng, ticket, log, địa chỉ hoặc bất kỳ dữ liệu nội bộ nào."
     parameters:
       type: object
       properties:
-        manufacturer: {type: string, description: "Hãng sản xuất công khai, ví dụ Lenovo"}
-        model: {type: string, description: "Tên model công khai, ví dụ ThinkPad T14 Gen 4"}
-        query_type: {type: string, enum: [specs, drivers, support, compatibility], default: "support", description: "Loại thông tin cần tìm"}
-        max_results: {type: integer, default: 3, description: "Số kết quả, tối đa 5"}
+        manufacturer:
+          type: string
+          description: "Hãng sản xuất công khai, ví dụ Lenovo."
+        model:
+          type: string
+          description: "Tên model công khai, ví dụ ThinkPad T14 Gen 4."
+        query_type:
+          type: string
+          enum: [specs, drivers, support, compatibility]
+          default: "support"
+          description: "Loại thông tin công khai cần tìm."
+        max_results:
+          type: integer
+          default: 3
+          description: "Số kết quả cần lấy; tối đa 5."
       required: [manufacturer, model, query_type]
 
   - name: policy
-    description: "Tìm trong chính sách IT nội bộ."
+    description: "Tìm trong chính sách IT nội bộ. Dùng khi câu hỏi liên quan quyền truy cập, bảo mật dữ liệu, công cụ bên ngoài, xử lý sự cố, vận hành dịch vụ hoặc quy trình ticket. Không suy đoán chính sách nếu không có kết quả."
     parameters:
       type: object
       properties:
-        query: {type: string, default: "", description: "Nội dung cần tìm"}
-        policy_area: {type: string, enum: [all, access_control, data_privacy, external_tools, incident_response, service_operations, ticketing], default: "all", description: "Nhóm chính sách"}
-        top_k: {type: integer, default: 3, description: "Số mục"}
+        query:
+          type: string
+          default: ""
+          description: "Câu hỏi hoặc tình huống chính sách cần tra cứu."
+        policy_area:
+          type: string
+          enum: [all, access_control, data_privacy, external_tools, incident_response, service_operations, ticketing]
+          default: "all"
+          description: "Nhóm chính sách gần nhất với yêu cầu."
+        top_k:
+          type: integer
+          default: 3
+          description: "Số mục chính sách cần lấy; ưu tiên 1–5."
       required: [query]
 
   - name: create_ticket
-    description: "Tạo một ticket hỗ trợ."
+    description: "Tạo ticket hỗ trợ và gây ra side effect. CHỈ gọi sau khi người dùng đã xác nhận rõ ràng nội dung cuối cùng của ticket, ít nhất gồm summary và priority. Trước khi gọi, nếu thiếu thông tin quan trọng hoặc người dùng đã sửa/hủy yêu cầu thì phải cập nhật lại và xin xác nhận mới. Không coi việc người dùng chỉ yêu cầu 'tạo ticket' là đã xác nhận. confirmed phải là true chỉ khi có xác nhận rõ ràng ở lượt hiện tại hoặc lượt gần nhất chưa bị sửa/hủy."
     parameters:
       type: object
       properties:
-        summary: {type: string, default: "", description: "Tóm tắt sự cố"}
-        priority: {type: string, enum: [low, medium, high, critical], default: "medium", description: "Mức ưu tiên"}
-        asset_id: {type: string, default: "", description: "Mã tài sản nếu có"}
-        confirmed: {type: boolean, default: false, description: "Đã được người dùng xác nhận"}
+        summary:
+          type: string
+          default: ""
+          description: "Tóm tắt ngắn, chính xác sự cố đã được người dùng xác nhận."
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+          default: "medium"
+          description: "Mức ưu tiên đã được xác nhận hoặc suy ra theo quy tắc hỗ trợ; không tự nâng mức nếu không có căn cứ."
+        asset_id:
+          type: string
+          default: ""
+          description: "Mã tài sản liên quan nếu người dùng đã cung cấp; để trống nếu không có."
+        confirmed:
+          type: boolean
+          default: false
+          description: "Phải là true khi và chỉ khi người dùng đã xác nhận nội dung ticket trước khi tạo. Nếu chưa xác nhận, phải để false và hỏi lại người dùng."
       required: [summary]

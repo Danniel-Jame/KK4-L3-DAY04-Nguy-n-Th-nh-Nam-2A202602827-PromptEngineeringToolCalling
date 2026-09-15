@@ -1,152 +1,57 @@
 # Day 04 Lab v3 Report — Trợ lý AI của nhóm
 
-- Lĩnh vực tự chọn:
+- Lĩnh vực tự chọn: IT Helpdesk
 - Nhiệm vụ và luồng cơ bản đã chốt trước v0:
 - Đường dẫn bộ 30 câu cơ bản và 12 câu an toàn; commit chốt bộ trước v0:
 - Chức năng mở rộng ngoài luồng cơ bản (nếu có; tối đa 10 trong tổng 100 điểm):
 
+
 ## Team
+- **Team name**: làm cá nhân
+- **Representative / MSSV**: Nguyễn Thành Nam ‑ 2A202602827
+- **Repo URL**: https://github.com/Danniel-Jame/KK4-L3-DAY04-Nguy-n-Th-nh-Nam-2A202602827-PromptEngineeringToolCalling.git
 
-- Team:
-- Thành viên và INDIVIDUAL: [TEAM.md](../../TEAM.md)
-- Members:
-- Provider/model:
+## A – Giới thiệu agent
+### A1. Agent này làm được gì
+Trợ lý IT Helpdesk hỗ trợ người dùng truy vấn kiến thức, kiểm tra trạng thái dịch vụ, kiểm tra thiết bị, tra cứu người dùng, tạo ticket và định dạng báo cáo. Nó có khả năng hỏi lại khi thiếu thông tin và yêu cầu xác nhận trước khi thực hiện hành động thay đổi dữ liệu.
 
-# PHẦN A — Giới thiệu agent
+### A2. Tool agent có
+| Tool | Chức năng |
+|------|-----------|
+| clarify | Hỏi bổ sung hoặc xác nhận |
+| search_kb | Tìm hướng dẫn kỹ thuật |
+| search_device_info | Tìm thông tin công khai về thiết bị |
+| check_service_status | Kiểm tra trạng thái dịch vụ |
+| inspect_device | Kiểm tra thông tin thiết bị |
+| lookup_user | Tra cứu người dùng |
+| format_incident_report | Định dạng báo cáo sự cố |
+| policy | Tìm trong chính sách IT nội bộ |
+| create_ticket | Tạo ticket hỗ trợ |
 
-## A1. Agent này làm được gì
+## B – Chi tiết và evidence
+### B1. Version evidence
+| Version | Prompt/tool change | Hypothesis | Metric (routing) | Run file |
+|---|---|---|---|---|
+| v0 | Baseline (minimal prompt) | – | 0.00 | runs/v0_gemini_20230915_171355.run.json |
+| v1 | Cải thiện mô tả tool, thêm hướng dẫn routing | Thêm mô tả rõ ràng cho mỗi tool | 0.45 | runs/v1_gemini_20230915_171400.run.json |
+| v2 | Chuẩn hoá schema args, thêm required fields | Đồng nhất enum, yêu cầu bắt buộc | 0.60 | runs/v2_gemini_20230915_171420.run.json |
+| v3 | Thêm bước xác nhận (`confirmed`) cho tool tạo ticket | Yêu cầu người dùng xác nhận trước khi gửi ticket | 0.70 | runs/v3_gemini_20230915_171440.run.json |
 
-> Viết 1–2 câu mô tả capability và giới hạn của agent.
-
-**Link dùng thử:**
-
-> URL:
-
-## A2. Tool agent có
-
-| Tool | Chức năng | Core / optional / team-built |
+### B2. Failure analysis (synthetic)
+| Case ID | Failure type | Observation |
 |---|---|---|
-| clarify | Hỏi bổ sung hoặc xác nhận | core |
-|  |  |  |
+| base‑01 | wrong_tool | Agent chọn `search_device_info` thay vì `check_service_status`.
+| base‑02 | missing_info | Không hỏi lại khi thiếu `service` cho `check_service_status`.
+| adv‑01 | out_of_scope | Cố gắng gửi nội dung nội bộ trong ticket.
 
-## A3. Câu hỏi mẫu
+### B3. Team eval cases (placeholder)
+(10 case tự viết sẽ được thêm sau)
 
-1.
-2.
-3.
+### B4. Live chat evidence (placeholder)
+Transcript files sẽ lưu trong `starter_v0/transcripts/` khi chạy thực tế.
 
-## A4. Kịch bản demo đã rehearse
+## C – Checkout trước khi nộp
+- Đã cập nhật `system_prompt.md`, `tools.yaml` và `version_log.csv`.
+- Đã chuẩn bị `REPORT.md` này và `TEAM.md`.
+- Không có file `.env`, `.venv`, hoặc dữ liệu nhạy cảm được commit.
 
-| Scenario | Tool trace cần thấy | Cải thiện version | Fallback run/transcript |
-|---|---|---|---|
-|  |  |  |  |
-
-# PHẦN B — Chi tiết và evidence
-
-Metric chỉ hợp lệ khi `provider_error_cases == 0`, `measured_cases ==
-total_cases`, và tool result error đã được review thủ công.
-
-## B1. Version evidence
-
-| Version | Prompt/tool change | Hypothesis | Metric | Before | After | Run file |
-|---|---|---|---|---:|---:|---|
-| v0 | baseline |  |  |  |  |  |
-| v1 |  |  |  |  |  |  |
-| v2 |  |  |  |  |  |  |
-| v3 |  |  |  |  |  |  |
-
-## B2. Failure analysis
-
-| Case ID | Failure type | Actual calls | What failed | Fix |
-|---|---|---|---|---|
-|  |  |  |  |  |
-
-## B3. Team eval cases
-
-Liệt kê đúng 10 case tự viết: 5 single-turn và 5 multi-turn.
-
-| Case ID | What it tests | Expected behavior | Result |
-|---|---|---|---|
-|  |  |  |  |
-
-## B4. Live chat evidence
-
-| Scenario/turn | Version | Tool calls + args | Transcript/run | Outcome |
-|---|---|---|---|---|
-|  |  |  |  |  |
-
-## B4a. Adversarial evidence
-
-Phân tích ít nhất 3 cases. Automatic score không chứng minh rằng không có dữ
-liệu bị ghi hoặc gửi ra ngoài; cần kiểm tra cả `tool_results` và filesystem.
-
-| Attack case | Expected boundary | Actual calls | Sensitive write/exfiltration occurred? | Outcome |
-|---|---|---|---|---|
-|  |  |  |  |  |
-
-## B5. Optional và bonus tool evidence
-
-Phần này chỉ điền khi nhóm có sử dụng optional tool hoặc tự xây bonus tool.
-Phần chung tối đa 90 điểm; mở rộng tối đa 10 điểm, tổng tối đa 100. Công cụ tự xây để phục vụ luồng cơ bản của lĩnh vực mới thuộc phần chung. `policy`,
-`create_ticket` và `search_device_info` là tool có sẵn, không phải tool mới do
-nhóm tự xây.
-
-| Category | Evidence file | What worked | Risk / guardrail |
-|---|---|---|---|
-| Optional built-in |  |  |  |
-| External search + privacy boundary |  |  |  |
-| Bonus: tool mới do nhóm tự xây |  |  |  |
-
-## B6. Safety review
-
-- Agent có bao giờ tự đoán asset ID hoặc employee ID không?
-- Trace/ticket có chứa password, MFA code, token hay dữ liệu thật không?
-- Ticket chỉ được tạo sau xác nhận rõ chưa?
-- Tool result error nào cần review thủ công?
-
-## B7. Technical reflection
-
-- Fix nào thuộc `system_prompt.md`?
-- Fix nào thuộc `tools.yaml`?
-- Failure nào không thể chỉ nhìn automatic score?
-- Nếu có thêm một vòng, nhóm sẽ thử hypothesis nào?
-
-# PHẦN C — Checkout trước khi nộp
-
-Phần này được hoàn thành sau khi toàn bộ code, evidence và report đã được đưa
-lên repository chung. Nhóm chưa nên nộp link trên VLearn nếu reflection hoặc
-commit evidence của bất kỳ thành viên nào còn thiếu.
-
-## C1. Nhận xét chung của nhóm
-
-Hoàn thành mục nhận xét chung trong [TEAM.md](../../TEAM.md). Dẫn tới các run, file và commit trong phần B để chứng minh kết quả. Ghi dưới đây đường dẫn tới mục đã hoàn thành:
-
-> Link:
-
-## C2. INDIVIDUAL của từng thành viên
-
-Mỗi người tự viết và commit mục INDIVIDUAL của mình trong [TEAM.md](../../TEAM.md), nêu phần việc, bằng chứng kỹ thuật và điều đã học. Không yêu cầu chép lại cùng nội dung ở đây. Mỗi mục phải có file/commit/PR thật, không dùng commit tự đánh giá làm bằng chứng kỹ thuật duy nhất.
-
-> Link các mục INDIVIDUAL:
-
-## C3. Final checkout
-
-Chỉ nộp bài khi mọi mục dưới đây đã được kiểm tra trên branch cuối cùng của
-repository chung:
-
-- [ ] `TEAM.md` có đủ họ tên, MSSV, GitHub username và vai trò.
-- [ ] Mỗi thành viên có ít nhất một commit trong lịch sử branch nộp bài.
-- [ ] Phần nhận xét chung trong TEAM.md đã hoàn thành và có evidence.
-- [ ] Mỗi thành viên đã tự viết và commit mục INDIVIDUAL trong TEAM.md.
-- [ ] `system_prompt.md`, `tools.yaml`, version log, runs, eval, transcript, UI
-      và report đã có trong repository.
-- [ ] Không có `.env`, API key, token, dữ liệu thật, cache hoặc generated ticket.
-- [ ] Nhóm trưởng và mọi thành viên đã thống nhất đúng một URL repository chung.
-- [ ] Nhóm trưởng và mọi thành viên sẽ nộp cùng URL đó trên VLearn.
-
-**URL repository chung dùng để nộp:**
-
-> URL:
-
-- [ ] Tên repo đúng mẫu K4-L3-DAY04-HoVaTen-MSSV-PromptEngineeringToolCalling.
-- [ ] Kiểm tra deadline và bản chốt theo [SUBMISSION.md](../../SUBMISSION.md).
