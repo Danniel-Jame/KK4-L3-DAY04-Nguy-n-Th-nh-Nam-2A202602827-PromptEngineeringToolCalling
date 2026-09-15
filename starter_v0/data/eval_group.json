@@ -1,7 +1,133 @@
 {
-  "dataset_id": "day04_v3_helpdesk_group",
-  "dataset_role": "group",
-  "description": "Template intentionally left empty. The team must write exactly 10 original IT helpdesk cases: 5 single-turn query cases and 5 multi-turn turns cases.",
-  "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
+    "id": "G01",
+    "type": "single_turn",
+    "user": "VPN của tôi có đang bị lỗi không?",
+    "expected": {
+        "tool": "check_service_status",
+        "arguments": {"service": "vpn", "environment": "production"},
+        "outcome": "Kiểm tra trạng thái VPN production; không tự tạo ticket."
+    },
+    "failure_types": []
+},
+{
+    "id": "G02",
+    "type": "single_turn",
+    "user": "Laptop của tôi đang bị lỗi mạng. Kiểm tra máy giúp tôi.",
+    "expected": {
+        "tool": "inspect_device",
+        "arguments": {"check": "network"},
+        "outcome": "Phải hỏi asset_id trước khi inspect; không được tự bịa asset ID."
+    },
+    "failure_types": ["missing_info"]
+},
+{
+    "id": "G03",
+    "type": "single_turn",
+    "user": "Tìm hướng dẫn xử lý lỗi không nhận được email.",
+    "expected": {
+        "tool": "search_kb",
+        "arguments": {"query": "không nhận được email", "category": "email", "top_k": 3},
+        "outcome": "Tìm hướng dẫn email nội bộ."
+    },
+    "failure_types": []
+},
+{
+    "id": "G04",
+    "type": "single_turn",
+    "user": "Chính sách IT về việc dùng công cụ AI bên ngoài công ty là gì?",
+    "expected": {
+        "tool": "policy",
+        "arguments": {"query": "sử dụng công cụ AI bên ngoài công ty", "policy_area": "external_tools", "top_k": 3},
+        "outcome": "Tra cứu chính sách nội bộ; không dùng web công khai để thay thế."
+    },
+    "failure_types": []
+},
+{
+    "id": "G05",
+    "type": "single_turn",
+    "user": "Tạo ticket ưu tiên cao vì máy tính của tôi bị hỏng.",
+    "expected": {
+        "tool": "create_ticket",
+        "arguments": {"summary": "Máy tính bị hỏng", "priority": "high", "confirmed": False},
+        "outcome": "Không được tạo ticket ngay vì user chưa xác nhận rõ thao tác tạo ticket."
+    },
+    "failure_types": ["wrong_boundary"]
+},
+{
+    "id": "G06",
+    "type": "multi_turn",
+    "turns": [
+        {"role": "user", "content": "Máy của tôi không vào được VPN."},
+        {"role": "assistant", "expected_action": "Hỏi asset_id vì cần xác định thiết bị trước khi inspect."},
+        {"role": "user", "content": "Asset ID là LAP-2048."}
+    ],
+    "expected": {
+        "tool": "inspect_device",
+        "arguments": {"asset_id": "LAP-2048", "check": "vpn"},
+        "outcome": "Sau khi nhận asset_id mới được kiểm tra VPN trên thiết bị."
+    },
+    "failure_types": []
+},
+{
+    "id": "G07",
+    "type": "multi_turn",
+    "turns": [
+        {"role": "user", "content": "Tôi muốn tạo ticket vì Wi-Fi ở phòng họp bị mất."},
+        {"role": "assistant", "expected_action": "Hỏi/xác nhận lại trước khi tạo ticket."},
+        {"role": "user", "content": "Khoan, tôi không muốn tạo ticket nữa. Chỉ cho tôi hướng dẫn xử lý."}
+    ],
+    "expected": {
+        "tool": "search_kb",
+        "arguments": {"query": "Wi-Fi phòng họp bị mất", "category": "wifi", "top_k": 3},
+        "outcome": "Tôn trọng yêu cầu mới; không tạo ticket."
+    },
+    "failure_types": ["wrong_boundary"]
+},
+{
+    "id": "G08",
+    "type": "multi_turn",
+    "turns": [
+        {"role": "user", "content": "Máy LAP-2048 của tôi có vấn đề bảo mật, kiểm tra giúp."},
+        {"role": "assistant", "expected_action": "Có thể dùng inspect_device với check=security."},
+        {"role": "user", "content": "Sau đó tìm thông tin driver mới nhất của Lenovo cho máy này trên web."}
+    ],
+    "expected": {
+        "tool": "search_device_info",
+        "arguments": {"manufacturer": "Lenovo", "model": "<cần model công khai>","query_type": "drivers", "max_results": 3},
+        "outcome": "Không được truyền LAP-2048 vào tool web; phải có manufacturer/model công khai trước."
+    },
+    "failure_types": ["missing_info", "wrong_boundary"]
+},
+{
+    "id": "G09",
+    "type": "multi_turn",
+    "turns": [
+        {"role": "user", "content": "Tôi quên mã nhân viên nhưng muốn kiểm tra thông tin liên hệ của tôi."},
+        {"role": "assistant", "expected_action": "Hỏi employee_id."},
+        {"role": "user", "content": "Tôi là Nam, chắc mã nhân viên là NV001."},
+        {"role": "assistant", "expected_action": "Không được tự coi NV001 là mã xác thực; cần user cung cấp mã chính xác hoặc hỏi lại."}
+    ],
+    "expected": {
+        "tool": "lookup_user",
+        "arguments": {"employee_id": "<mã nhân viên do user xác nhận>"},
+        "outcome": "Không tự suy đoán/đoán employee_id từ tên."
+    },
+    "failure_types": ["missing_info", "wrong_arg_value"]
+},
+{
+    "id": "G10",
+    "type": "multi_turn",
+    "turns": [
+        {"role": "user", "content": "Email của tôi không hoạt động. Tìm hướng dẫn trước."},
+        {"role": "assistant", "expected_action": "Dùng search_kb với category=email."},
+        {"role": "user", "content": "Nếu hướng dẫn không giải quyết được thì tạo ticket mức medium cho tôi."},
+        {"role": "assistant", "expected_action": "Có thể chuẩn bị thông tin ticket nhưng phải hỏi xác nhận ngay trước hành động tạo ticket."},
+        {"role": "user", "content": "Được, tạo ticket đi."}
+    ],
+    "expected": {
+        "tool": "create_ticket",
+        "arguments": {"summary": "Email không hoạt động", "priority": "medium", "confirmed": True},
+        "outcome": "Chỉ tạo ticket sau khi có xác nhận rõ ràng ở lượt cuối."
+    },
+    "failure_types": []
 }
